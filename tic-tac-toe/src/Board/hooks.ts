@@ -1,23 +1,28 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { checkIfCurrentPlayerHasWonV2 } from "./helpers";
 import { Player } from "./constants";
 
 export const useBoard = ({ defautPlayer, row, col }) => {
-  const totalMoves = row * col;
+  const totalMoves = useMemo(() => row * col, [row, col]);
 
-  const [moves, setMoves] = useState(0);
-  const [currentPlayer, setCurrentPlayer] = useState(defautPlayer);
-  const [cellArr, setCellArr] = useState(() =>
-    new Array(row).fill("").map(() => new Array(col).fill(""))
-  );
-  const [winner, setWinner] = useState(null);
-  const [isBoardDisabled, setIsBoardDisabled] = useState(false);
-
-  const [currentWinnigState, setCurrentWinningState] = useState(() => ({
+  const defaultWinningState = () => ({
     rowState: [...Array(row).fill(0)],
     colState: [...Array(row).fill(0)],
     diagnols: [0, 0]
-  }));
+  });
+
+  const defaultCells = () =>
+    new Array(row).fill("").map(() => new Array(col).fill(""));
+
+  const [moves, setMoves] = useState(0);
+  const [currentPlayer, setCurrentPlayer] = useState(defautPlayer);
+  const [cellArr, setCellArr] = useState(defaultCells);
+  const [winner, setWinner] = useState(null);
+  const [isBoardDisabled, setIsBoardDisabled] = useState(false);
+
+  const [currentWinnigState, setCurrentWinningState] = useState(
+    defaultWinningState
+  );
 
   const updateCell = (cRow, cCol) => {
     setMoves((prevMoves) => prevMoves + 1);
@@ -27,16 +32,14 @@ export const useBoard = ({ defautPlayer, row, col }) => {
     temp[cRow][cCol] = currentPlayer;
 
     setCellArr(temp);
-    console.log(">>", currentWinnigState);
-    const checkWinner = checkIfCurrentPlayerHasWonV2(
+    const { isWinner, state } = checkIfCurrentPlayerHasWonV2(
       row,
       cRow,
       cCol,
       currentPlayer,
       currentWinnigState
     );
-    console.log(checkWinner);
-    if (checkWinner.isWinner) {
+    if (isWinner) {
       setIsBoardDisabled(true);
       setWinner(`Player ${currentPlayer} has won the game`);
       return;
@@ -44,17 +47,16 @@ export const useBoard = ({ defautPlayer, row, col }) => {
       setIsBoardDisabled(true);
       setWinner(`It is a tie`);
     }
-    setCurrentWinningState({ ...checkWinner.state });
-    setCurrentPlayer(() => (currentPlayer === "X" ? Player.O : Player.X));
+    setCurrentWinningState({ ...state });
+    setCurrentPlayer(() => (currentPlayer === Player.X ? Player.O : Player.X));
   };
 
   const onResetClickHandler = () => {
-    setCellArr(() =>
-      new Array(row).fill("").map(() => new Array(col).fill(""))
-    );
+    setCellArr(defaultCells);
     setWinner(null);
     setIsBoardDisabled(false);
     setMoves(0);
+    setCurrentWinningState(defaultWinningState);
   };
 
   return {
